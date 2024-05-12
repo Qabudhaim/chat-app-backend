@@ -1,0 +1,87 @@
+<!-- chat/templates/chat/room.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <title>Chat Room</title>
+</head>
+<body>
+    <textarea id="chat-log" cols="100" rows="20"></textarea><br>
+    <input id="chat-message-input" type="text" size="100"><br>
+    <input id="chat-message-submit" type="button" value="Send">
+    {{ room_name|json_script:"room-name" }}
+    <script>
+        const roomName = JSON.parse(document.getElementById('room-name').textContent);
+
+        // get url parameters
+        const url = new URL(window.location.href);
+        
+        const token = url.searchParams.get('token');
+
+        console.log(token);
+        console.log(typeof token);
+
+        // const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzE1MjAwNTYxLCJpYXQiOjE3MTUxOTk2NjEsImp0aSI6ImMzODQ1YzY0MzQwOTQ3NDU4MmU0YzFhZTQ0YjczMWY4IiwidXNlcl9pZCI6NH0.lUxWmHeppgGdkk-2O76jx-thHFqyzkyC5l35rEAsSDs"
+
+        const chatSocket = new WebSocket(
+            'ws://'
+            + window.location.host
+            + '/ws/chat/'
+            + roomName
+            + '/'
+            + '?token=' + token
+        );
+
+        chatSocket.onmessage = function(e) {
+            const data = JSON.parse(e.data);
+            document.querySelector('#chat-log').value += (data.data.message + '\n');
+        };
+
+        chatSocket.onclose = function(e) {
+            console.error('Chat socket closed unexpectedly');
+        };
+
+        document.querySelector('#chat-message-input').focus();
+        document.querySelector('#chat-message-input').onkeyup = function(e) {
+            if (e.key === 'Enter') {  // enter, return
+                document.querySelector('#chat-message-submit').click();
+            }
+        };
+
+        document.querySelector('#chat-message-submit').onclick = function(e) {
+            const messageInputDom = document.querySelector('#chat-message-input');
+            const message = messageInputDom.value;
+            
+            
+            chatSocket.send(JSON.stringify({
+                'username': 'Lamis',
+                'user_id': 5,
+                'room_hash': '1ba709d2440f09ecbfe6754a83ce9e22e51146297ac904d002d5ba01645fa6ed',
+                'message': message,
+            }));
+            messageInputDom.value = '';
+
+            // send message to the server
+
+            server_url = 'http://192.168.178.56:8000/api/send-message/'
+            headers
+            = {
+            'Authorization': 'Bearer ' + token,
+            'Content-Type': 'application/json',
+        }
+
+        data = {
+            'room_hash': roomName,
+            'message': message
+        }
+
+        fetch(server_url, {
+            method: 'POST',
+            headers: headers,
+            body: JSON.stringify(data)
+        })
+
+        };
+    </script>
+</body>
+</html>
